@@ -4,6 +4,7 @@
  */
 package br.senai.sc.model.persistencia;
 
+import br.senai.sc.model.negocio.Endereco;
 import br.senai.sc.model.negocio.Pessoa;
 import br.senai.sc.model.persistencia.dao.PessoaDAO;
 import java.sql.Connection;
@@ -21,11 +22,11 @@ import javax.swing.JOptionPane;
  */
 public class PessoaDaoJDBC implements PessoaDAO {
 
-    private final String INSERT = "Insert into pessoa(nome, datanascimento) values (?, ?)";
-    private final String UPDATE = "update pessoa set nome = ?, datanascimento = ? where id = ?";
+    private final String INSERT = "Insert into pessoa(nome, datanascimento, id_endereco) values (?, ?, ?)";
+    private final String UPDATE = "update pessoa set nome = ?, datanascimento = ?, id_endereco = ? where id = ?";
     private final String DELETE = "delete from pessoa where id = ?";
-    private final String LIST = "select * from pessoa";
-    private final String LISTBYID = "select * from pessoa where id = ?";
+    private final String LIST = "select * from pessoa, endereco where pessoa.id_endereco = endereco.id";
+    private final String LISTBYID = "select * from pessoa, endereco where pessoa.id_endereco = endereco.id and id = ?";
 
 
     /* 
@@ -38,12 +39,13 @@ public class PessoaDaoJDBC implements PessoaDAO {
             PreparedStatement pstm = conn.prepareStatement(INSERT);
             pstm.setString(1, p.getNome());
             pstm.setDate(2, new java.sql.Date(p.getDataNascimento().getTime()));
+            pstm.setInt(3, p.getEndereco().getId());//<- Relacionamento de chave estrangeira
             pstm.execute();
             JOptionPane.showMessageDialog(null, "Transação efetuada com sucesso");
             ConnectionFactory.closeConnection(conn, pstm);
             return true;
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Não foi possivel efetuar a transação"+ e.getMessage());
+            JOptionPane.showMessageDialog(null, "Não foi possivel efetuar a transação" + e.getMessage());
             return false;
         }
     }
@@ -58,7 +60,8 @@ public class PessoaDaoJDBC implements PessoaDAO {
             PreparedStatement pstm = conn.prepareStatement(UPDATE);
             pstm.setString(1, p.getNome());
             pstm.setDate(2, new java.sql.Date(p.getDataNascimento().getTime()));
-            pstm.setInt(3, p.getCodigo());
+            pstm.setInt(4, p.getCodigo());
+            pstm.setInt(3, p.getEndereco().getId());//<- Relacionamento de chave estrangeira
             pstm.execute();
             JOptionPane.showMessageDialog(null, "Transação efetuada com sucesso");
             ConnectionFactory.closeConnection(conn, pstm);
@@ -103,6 +106,15 @@ public class PessoaDaoJDBC implements PessoaDAO {
                 p.setCodigo(rs.getInt("id"));
                 p.setNome(rs.getString("nome"));
                 p.setDataNascimento(rs.getDate("datanascimento"));
+
+                //Continuacao chave estrangeira
+                Endereco e = new Endereco();
+                e.setRua(rs.getString("rua"));
+                e.setEstado(rs.getString("estado"));
+                e.setNumero(rs.getInt("numero"));
+                e.setCidade(rs.getString("cidade"));
+                p.setEndereco(e);
+                //FIM
                 pessoas.add(p);
             }
 
@@ -130,6 +142,15 @@ public class PessoaDaoJDBC implements PessoaDAO {
                 p.setCodigo(rs.getInt("id"));
                 p.setNome(rs.getString("nome"));
                 p.setDataNascimento(rs.getDate("datanascimento"));
+                //Continuacao chave estrangeira
+                Endereco e = new Endereco();
+                e.setRua(rs.getString("rua"));
+                e.setEstado(rs.getString("estado"));
+                e.setNumero(rs.getInt("numero"));
+                e.setCidade(rs.getString("cidade"));
+                p.setEndereco(e);
+                //FIM
+
                 return p;
             }
 
